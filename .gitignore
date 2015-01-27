@@ -1,0 +1,23 @@
+# Executables
+*.exe
+*.out
+*.app
+
+*.dll
+*.sdf
+*.sln
+*.swp
+*.suo
+*.ilk
+*.pdb
+*.lib
+
+lib/*
+Debug/*
+
+OlaCircular/Debug/*
+
+*~
+*.opensdf
+*.vcxproj
+*.filters
