@@ -8,15 +8,19 @@ using namespace std;
 #define DEF_floorGridXSteps	10.0
 #define DEF_floorGridZSteps	10.0
 
-int angle = 90,
+int 
+	angle = 90,
 	Xpos = 10,
-	Ypos = 10,
-	k = 1;
-double Zpos = 3.0,
-		t = 0.0;
+	Ypos = 10;
+double 
+	Zpos = 3.0,
+	t = 0.0;
 
-float amplitud = 1.0,
-	frecuencia = 1.0;
+float
+	amplitud = 1.0,
+	frecuencia = 1.0,
+	speed = 0.1,
+	deca = 1.0;
 
 GLfloat ctlpoints[21][21][3];
 
@@ -83,6 +87,13 @@ float direction(int x, int y, int cx, int cy) {
 	return l;
 }
 
+float decaimiento(int u, int v) {
+	float r = direction(u,v,Xpos,Ypos);
+	if (r == 0.0)
+		return 1.0;
+	return (r - r*deca + 1);
+}
+
 void init_surface() {
 	int u, v;
 
@@ -90,7 +101,7 @@ void init_surface() {
 		for (v = 0; v < 21; v++) {
 			ctlpoints[u][v][0] = ((GLfloat)u - 10.0f);
 			ctlpoints[u][v][1] = ((GLfloat)v - 10.0f);
-			ctlpoints[u][v][2] = amplitud*(pow(sin(direction(u,v,Xpos,Ypos)*frecuencia - t), k));
+			ctlpoints[u][v][2] = amplitud*sin(direction(u,v,Xpos,Ypos)*frecuencia - t)/decaimiento(u, v);
 		}
     }
 }
@@ -130,41 +141,31 @@ void Keyboard(unsigned char key, int x, int y)
 	case 'a':
 		amplitud += 0.1;
 		break;
-	case 'q':
+	case 'z':
 		amplitud -= 0.1;
 		break;
 	case 's':
 		frecuencia += 0.1;
 		break;
-	case 'w':
+	case 'x':
 		frecuencia -= 0.1;
 		break;
 	case 'd':
-		k += 1;
+		speed += 0.1;
 		break;
-	case 'e':
-		if (k > 1)
-			k -= 1;
+	case 'c':
+		if (speed > 0.2)
+			speed -= 0.1;
 		break;
-  }
-}
-
-void specialKey (int key, int x, int y) {
-	switch (key)
-	{
-		case GLUT_KEY_UP:
-			Xpos += 1;
-			break;
-		case GLUT_KEY_DOWN:
-			Xpos -= 1;
-			break;
-		case GLUT_KEY_LEFT:
-			Ypos -= 1;
-			break;
-		case GLUT_KEY_RIGHT:
-			Ypos += 1;
-			break;
-	}	
+	case 'f':
+		if (deca > 0.0)
+			deca -= 0.01;
+		break;
+	case 'v':
+		if (deca < 1.0)
+			deca += 0.01;
+		break;
+	}
 }
 
 GLfloat * knotVector(int k) {
@@ -243,10 +244,12 @@ void render(){
 
 	// Luz y material
 
-	GLfloat mat_diffuse[] = { 0.6, 0.6, 0.9, 1.0 };
-	GLfloat mat_specular[] = { 0.8, 0.8, 1.0, 1.0 };
-	GLfloat mat_shininess[] = { 60.0 };
+	GLfloat mat_ambient[] = { 0.28, 0.75, 0.82, 1.0 };
+	GLfloat mat_diffuse[] = { 0.7372, 0.8313, 0.9019, 0.95 };
+	GLfloat mat_specular[] = { 0.803, 1.0, 1.0, 0.85 };
+	GLfloat mat_shininess[] =  { 42.0 };
 	
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
 	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
@@ -315,8 +318,8 @@ void render(){
 void animacion(int value) {
 	
 	init_surface();
-	t += 0.1;
-	glutTimerFunc(10,animacion,1);
+	t += speed;
+	glutTimerFunc(1,animacion,1);
     glutPostRedisplay();
 	
 }
@@ -329,6 +332,8 @@ int main (int argc, char** argv) {
 
 	glutInitWindowSize(960,540);
 
+	glutInitWindowPosition (500, 100);
+
 	glutCreateWindow("Test Opengl");
 
 	init ();
@@ -336,7 +341,6 @@ int main (int argc, char** argv) {
 	glutReshapeFunc(changeViewport);
 	glutDisplayFunc(render);
 	glutKeyboardFunc(Keyboard);
-	glutSpecialFunc(specialKey);
 		
 	GLenum err = glewInit();
 	if (GLEW_OK != err) {
@@ -344,7 +348,7 @@ int main (int argc, char** argv) {
 		return 1;
 	}
 	
-	glutTimerFunc(10,animacion,1);
+	glutTimerFunc(1,animacion,1);
 	glutMainLoop();
 	return 0;
 
