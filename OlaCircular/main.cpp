@@ -1,6 +1,7 @@
 #include <GL\glew.h>
 #include <GL\freeglut.h>
 #include <iostream>
+#include "noises.h"
 
 using namespace std;
 
@@ -8,10 +9,15 @@ using namespace std;
 #define DEF_floorGridXSteps	10.0
 #define DEF_floorGridZSteps	10.0
 
+bool
+	pause = false;
+
 int 
 	angle = 90,
 	Xpos = 10,
-	Ypos = 10;
+	Ypos = 10,
+	start = 1,
+	enable = 1;
 double 
 	Zpos = 3.0,
 	t = 0.0;
@@ -20,8 +26,11 @@ float
 	amplitud = 1.0,
 	frecuencia = 1.0,
 	speed = 0.1,
-	deca = 1.0;
+	deca = 1.0,
+	amplitudR = 0.0,
+	offsetR = 0.05;
 
+GLfloat noise[21][21][2];
 GLfloat ctlpoints[21][21][3];
 
 GLUnurbsObj *theNurb;
@@ -99,9 +108,13 @@ void init_surface() {
 
     for (u = 0; u < 21; u++) {
 		for (v = 0; v < 21; v++) {
-			ctlpoints[u][v][0] = ((GLfloat)u - 10.0f);
-			ctlpoints[u][v][1] = ((GLfloat)v - 10.0f);
-			ctlpoints[u][v][2] = amplitud*sin(direction(u,v,Xpos,Ypos)*frecuencia - t)/decaimiento(u, v);
+			//Ruido
+			noise[u][v][0] = ((GLfloat)u - 10.0f)*amplitudR + offsetR;
+			noise[u][v][1] = ((GLfloat)v - 10.0f)*amplitudR + offsetR;
+			//Posicion de los puntos de control
+			ctlpoints[u][v][0] = ((GLfloat)u - 10.0f); //coord. X
+			ctlpoints[u][v][1] = ((GLfloat)v - 10.0f); //coord. Z
+			ctlpoints[u][v][2] = enable*amplitud*sin(direction(u,v,Xpos,Ypos)*frecuencia - t)/decaimiento(u, v) + (noiseFunction(noise[u][v]));
 		}
     }
 }
@@ -115,7 +128,7 @@ void init(){
     //glClearColor (0.0, 0.0, 0.0, 1.0);
     //glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
     //glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-    //glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+    //glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);		
 
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
@@ -137,6 +150,36 @@ void Keyboard(unsigned char key, int x, int y)
   {
 	case 27:             
 		exit (0);
+		break;
+	case '1':
+		pause = !pause;
+		break;
+	case '3':
+		enable = !enable;
+		break;
+	case 'g':
+		amplitudR += 0.01;
+		break;
+	case 'b':
+		amplitudR -= 0.01;
+		break;
+	case 'h':
+		offsetR += 0.01;
+		break;
+	case 'n':
+		offsetR -= 0.01;
+		break;
+	case 'q':
+		Xpos += 1;
+		break;
+	case 'w':
+		Xpos -= 1;
+		break;
+	case 'e':
+		Ypos += 1;
+		break;
+	case 'r':
+		Ypos -= 1;
 		break;
 	case 'a':
 		amplitud += 0.1;
@@ -316,9 +359,9 @@ void render(){
 }
 
 void animacion(int value) {
-	
 	init_surface();
-	t += speed;
+	if (!pause)
+		t += speed;
 	glutTimerFunc(1,animacion,1);
     glutPostRedisplay();
 	
