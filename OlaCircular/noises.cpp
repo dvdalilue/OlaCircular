@@ -3,6 +3,7 @@
 #include <math.h>
 #include "noises.h"
 
+
 using namespace std;
 
 #define B 0x100
@@ -29,7 +30,7 @@ static int strt = 1;
 	r0 = t - (int)t;\
 	r1 = r0 - 1.;
 
-float noiseFunction(float vec[2])
+float noiseFunction(float *vec)
 {
 	int bx0, bx1, by0, by1, b00, b10, b01, b11;
 	float rx0, rx1, ry0, ry1, *q, sx, sy, a, b, t, u, v;

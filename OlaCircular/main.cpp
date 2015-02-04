@@ -2,6 +2,7 @@
 #include <GL\freeglut.h>
 #include <iostream>
 #include "noises.h"
+#include "turbulance.h"
 
 using namespace std;
 
@@ -20,7 +21,8 @@ int
 	enable = 1;
 double 
 	Zpos = 3.0,
-	t = 0.0;
+	t = 0.0,
+	factorTurb = 0.05;
 
 float
 	amplitud = 1.0,
@@ -28,9 +30,14 @@ float
 	speed = 0.1,
 	deca = 1.0,
 	amplitudR = 0.0,
-	offsetR = 0.05;
+	offsetR = 0.05,
+	alturaRuido = 0.02;
+	
+	
+
 
 GLfloat noise[21][21][2];
+GLfloat ruido[21][21];
 GLfloat ctlpoints[21][21][3];
 
 GLUnurbsObj *theNurb;
@@ -96,6 +103,8 @@ float direction(int x, int y, int cx, int cy) {
 	return l;
 }
 
+
+
 float decaimiento(int u, int v) {
 	float r = direction(u,v,Xpos,Ypos);
 	if (r == 0.0)
@@ -115,9 +124,11 @@ void init_surface() {
 			ctlpoints[u][v][0] = ((GLfloat)u - 10.0f); //coord. X
 			ctlpoints[u][v][1] = ((GLfloat)v - 10.0f); //coord. Z
 			ctlpoints[u][v][2] = enable*amplitud*sin(direction(u,v,Xpos,Ypos)*frecuencia - t)/decaimiento(u, v) + (noiseFunction(noise[u][v]));
+		
+			ruido[u][v] = alturaRuido*0.005*turbulence(noise[u][v][0], noise[u][v][1],factorTurb);
 		}
     }
-}
+} 
 
 void init(){
 
@@ -156,6 +167,18 @@ void Keyboard(unsigned char key, int x, int y)
 		break;
 	case '3':
 		enable = !enable;
+		break;
+	case 'j':
+		alturaRuido +=0.01;
+		break;
+	case 'm':
+		alturaRuido -=0.01;
+		break;
+	case 't':
+		factorTurb +=1;
+		break;
+	case 'y':
+		factorTurb -=1;
 		break;
 	case 'g':
 		amplitudR += 0.01;
@@ -198,17 +221,17 @@ void Keyboard(unsigned char key, int x, int y)
 		break;
 	case 'c':
 		if (speed > 0.2)
-			speed -= 0.1;
+			speed -= 0.1; 
 		break;
 	case 'f':
 		if (deca > 0.0)
-			deca -= 0.01;
+			deca += 0.01;//dice que aumenta el decaimiento de la ola creo que no es sea -= 0.01;
 		break;
 	case 'v':
 		if (deca < 1.0)
-			deca += 0.01;
+			deca -= 0.01;//dice que disminuye el decaimiento de la ola creo que no es sea += 0.01;
 		break;
-	}
+  }
 }
 
 GLfloat * knotVector(int k) {
