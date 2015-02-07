@@ -11,8 +11,8 @@ using namespace std;
 #define DEF_floorGridZSteps	10.0
 
 bool
-	pause = false;
-
+	pause = false,
+	enableR = false;
 int 
 	angle = 90,
 	Xpos = 10,
@@ -22,16 +22,19 @@ int
 double 
 	Zpos = 3.0,
 	t = 0.0,
-	factorTurb = 0.05;
+	factorTurb = 1.0;
 
 float
 	amplitud = 1.0,
 	frecuencia = 1.0,
 	speed = 0.1,
-	deca = 1.0,
-	amplitudR = 0.0,
-	offsetR = 0.05,
-	alturaRuido = 0.02;
+	deca = 0.00,
+	amplitudR = 1.0,
+	offsetR = 0.00,
+	alturaRuido = 0.0f,
+	concavidad = 0.0f,
+	trasX = 0.0f;
+
 	
 	
 
@@ -103,13 +106,13 @@ float direction(int x, int y, int cx, int cy) {
 	return l;
 }
 
-
-
 float decaimiento(int u, int v) {
 	float r = direction(u,v,Xpos,Ypos);
-	if (r == 0.0)
-		return 1.0;
-	return (r - r*deca + 1);
+	return (r - r*(1 - deca) + 1);
+}
+
+float cuadratica(int u, float pos) {
+	return (pow(u-pos, 2))*concavidad;
 }
 
 void init_surface() {
@@ -120,12 +123,15 @@ void init_surface() {
 			//Ruido
 			noise[u][v][0] = ((GLfloat)u - 10.0f)*amplitudR + offsetR;
 			noise[u][v][1] = ((GLfloat)v - 10.0f)*amplitudR + offsetR;
-			//Posicion de los puntos de control
-			ctlpoints[u][v][0] = ((GLfloat)u - 10.0f); //coord. X
-			ctlpoints[u][v][1] = ((GLfloat)v - 10.0f); //coord. Z
-			ctlpoints[u][v][2] = enable*amplitud*sin(direction(u,v,Xpos,Ypos)*frecuencia - t)/decaimiento(u, v) + (noiseFunction(noise[u][v]));
-		
 			ruido[u][v] = alturaRuido*0.005*turbulence(noise[u][v][0], noise[u][v][1],factorTurb);
+			//Posicion de los puntos de control
+			ctlpoints[u][v][0] = ((GLfloat)u - 10.0f); //coord. Z
+			ctlpoints[u][v][1] = ((GLfloat)v - 10.0f); //coord. X
+			ctlpoints[u][v][2] = enable*amplitud*sin(direction(u,v,Xpos,Ypos)*frecuencia - t)/decaimiento(u, v) +
+									enableR*(noiseFunction(noise[u][v])) +
+									cuadratica(ctlpoints[u][v][1], trasX) +
+									ruido[u][v]; // coord. Y
+			
 		}
     }
 } 
@@ -155,83 +161,131 @@ void init(){
 	gluNurbsProperty(theNurb, GLU_DISPLAY_MODE, GLU_FILL);
 }
 
+void imprimirEstado() {
+	cout << "\n\n\n\n\n\n\n\n";
+	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+	cout << "Estado de las variables\n";
+	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+	cout << "[x++/x--]\n\n";
+	cout << "Amplitud de ola [a/z]: " << amplitud << "\n";
+	cout << "Longitud de ola [s/x]: " << frecuencia << "\n";
+	cout << "Velocidad [d/c]: " << speed << "\n";
+	cout << "Centro [(q,e/w,r]: " << "<" << Xpos - 10.0f << "," << Ypos - 10.0f << ">" << "\n";
+	cout << "Decaimiento [f/v]: " << deca << "\n";
+	cout << "Amplitud del ruido [g/b]: " << amplitudR << "\n";
+	cout << "Offset del Ruido [h/n]: " << offsetR << "\n";
+	cout << "Altura del Ruido [j/m]: " << alturaRuido << "\n";
+	cout << "Factor de Turbulaencia [t/y]: " << factorTurb << "\n";
+	cout << "Factor de Curbatura [u/i]: " << concavidad << "\n";
+	cout << "Traslacion de Curbatura [o/l]: " << trasX << "\n";
+	cout << "PAUSA [1]: " << (pause ? "On" : "Off") << "\n";
+	cout << "RUIDO [2]: " << (enableR ? "On" : "Off") << "\n";
+	cout << "OLA [3]: " << (enable ? "On" : "Off") << "\n";
+	cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
+}
 void Keyboard(unsigned char key, int x, int y)
 {
-  switch (key)
-  {
-	case 27:             
-		exit (0);
-		break;
-	case '1':
-		pause = !pause;
-		break;
-	case '3':
-		enable = !enable;
-		break;
-	case 'j':
-		alturaRuido +=0.01;
-		break;
-	case 'm':
-		alturaRuido -=0.01;
-		break;
-	case 't':
-		factorTurb +=1;
-		break;
-	case 'y':
-		factorTurb -=1;
-		break;
-	case 'g':
-		amplitudR += 0.01;
-		break;
-	case 'b':
-		amplitudR -= 0.01;
-		break;
-	case 'h':
-		offsetR += 0.01;
-		break;
-	case 'n':
-		offsetR -= 0.01;
-		break;
-	case 'q':
-		Xpos += 1;
-		break;
-	case 'w':
-		Xpos -= 1;
-		break;
-	case 'e':
-		Ypos += 1;
-		break;
-	case 'r':
-		Ypos -= 1;
-		break;
-	case 'a':
-		amplitud += 0.1;
-		break;
-	case 'z':
-		amplitud -= 0.1;
-		break;
-	case 's':
-		frecuencia += 0.1;
-		break;
-	case 'x':
-		frecuencia -= 0.1;
-		break;
-	case 'd':
-		speed += 0.1;
-		break;
-	case 'c':
-		if (speed > 0.2)
-			speed -= 0.1; 
-		break;
-	case 'f':
-		if (deca > 0.0)
-			deca += 0.01;//dice que aumenta el decaimiento de la ola creo que no es sea -= 0.01;
-		break;
-	case 'v':
-		if (deca < 1.0)
-			deca -= 0.01;//dice que disminuye el decaimiento de la ola creo que no es sea += 0.01;
-		break;
-  }
+	switch (key)
+	{
+		case 27:             
+			exit (0);
+			break;
+		case '1':
+			pause = !pause;
+			break;
+		case '2':
+			enableR = !enableR;
+			break;
+		case '3':
+			enable = !enable;
+			break;
+		case 'j':
+			alturaRuido +=0.01;
+			break;
+		case 'm':
+			alturaRuido -=0.01;
+			break;
+		case 't':
+			factorTurb +=1;
+			break;
+		case 'y':
+			if (factorTurb >= 2){
+				factorTurb -=1;
+			}
+			break;
+		case 'g':
+			amplitudR += 0.01;
+			break;
+		case 'b':
+			amplitudR -= 0.01;
+			break;
+		case 'h':
+			offsetR += 0.01;
+			break;
+		case 'n':
+			offsetR -= 0.01;
+			break;
+		case 'q':
+			Xpos += 1;
+			break;
+		case 'w':
+			Xpos -= 1;
+			break;
+		case 'e':
+			Ypos += 1;
+			break;
+		case 'r':
+			Ypos -= 1;
+			break;
+		case 'a':
+			amplitud += 0.1;
+			break;
+		case 'z':
+			amplitud -= 0.1;
+			break;
+		case 's':
+			frecuencia += 0.1;
+			break;
+		case 'x':
+			frecuencia -= 0.1;
+			break;
+		case 'd':
+			speed += 0.1;
+			break;
+		case 'o':
+			trasX += 0.1; 
+			break;
+		case 'l':
+			trasX -= 0.1;
+			break;
+		case 'c':
+			if (speed > 0.1) {
+				speed -= 0.1;
+			}
+			break;
+		case 'u':
+			if (concavidad < 30.0f){
+				concavidad += 0.001f;
+			}
+			break;
+		case 'i':
+			if (concavidad > 0.001f){
+				concavidad -= 0.001f;
+			}
+			break;
+		case 'f':
+			if (deca < 1.0){
+				deca += 0.01;
+			}
+			break;
+		case 'v':
+			if (deca > 0.01){
+				deca -= 0.01;
+			}
+			break;
+	}
+	imprimirEstado();
+	
 }
 
 GLfloat * knotVector(int k) {
@@ -400,9 +454,11 @@ int main (int argc, char** argv) {
 
 	glutInitWindowPosition (500, 100);
 
-	glutCreateWindow("Test Opengl");
+	glutCreateWindow("Ola Circular");
 
 	init ();
+
+	imprimirEstado();
 
 	glutReshapeFunc(changeViewport);
 	glutDisplayFunc(render);
